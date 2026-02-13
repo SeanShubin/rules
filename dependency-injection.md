@@ -407,6 +407,102 @@ Coroutine contexts achieve all three goals through language-level mechanisms rat
 
 **The principle:** When language features provide equivalent testability, explicitness, and control through different mechanisms, prefer the idiomatic pattern over forcing constructor injection.
 
+**Where Coroutine Contexts Should Be Created:**
+
+Since the coroutine context is an ambient dependency controlled at boundaries, it's generally **incorrect** to create new contexts or hardcode dispatchers anywhere except entry points:
+
+**✅ Correct - Context at entry points only:**
+```kotlin
+// Entry point
+fun main(args: Array<String>) = runBlocking {  // ← Only here
+    val integrations = ProductionIntegrations(args)
+    val deps = ApplicationDependencies(integrations)
+    deps.runner.run()  // Everything else is suspend functions
+}
+
+// Tests
+@Test
+fun test() = runTest {  // ← Or here
+    val integrations = TestIntegrations(testArgs)
+    // ...
+}
+```
+
+**❌ Incorrect - New contexts deep in code:**
+```kotlin
+class DataProcessor(private val database: Database) {
+    suspend fun process() {
+        val data = database.query("...")
+
+        // ❌ BAD - Creates new blocking context, ignores injected context
+        runBlocking(Dispatchers.Default) {
+            heavyComputation(data)
+        }
+        // Lost control, tests can't control this execution
+    }
+}
+
+class ImageProcessor {
+    suspend fun processImage(image: Image) {
+        // ❌ BAD - Hardcoded dispatcher
+        withContext(Dispatchers.IO) {
+            // I/O work
+        }
+        // Tests can't substitute, infrastructure decision hardcoded
+    }
+}
+```
+
+**✅ Correct - Inject dispatchers when needed:**
+```kotlin
+class ImageProcessor(
+    private val ioDispatcher: CoroutineDispatcher,
+    private val computationDispatcher: CoroutineDispatcher
+) {
+    suspend fun processImage(image: Image): ProcessedImage {
+        val imageData = withContext(ioDispatcher) {
+            readImageFromDisk(image.path)
+        }
+
+        return withContext(computationDispatcher) {
+            applyFilters(imageData)
+        }
+    }
+}
+
+// In Integrations - dispatchers are boundary crossings
+interface Integrations {
+    val ioDispatcher: CoroutineDispatcher
+    val computationDispatcher: CoroutineDispatcher
+}
+
+class ProductionIntegrations(args: Array<String>) : Integrations {
+    override val ioDispatcher = Dispatchers.IO
+    override val computationDispatcher = Dispatchers.Default
+}
+
+class TestIntegrations(args: Array<String>) : Integrations {
+    override val ioDispatcher = StandardTestDispatcher()
+    override val computationDispatcher = StandardTestDispatcher()
+}
+```
+
+**The Rule:**
+
+- **`runBlocking` only at:** Entry points (`main`), test setup (`@Test`), or rare bridges from concurrent back to blocking
+- **Everywhere else:** Use `suspend` functions and trust the injected context
+- **If you need different dispatchers:** Inject them as dependencies through `Integrations`
+- **Don't hardcode:** `Dispatchers.IO`, `Dispatchers.Default`, or `newSingleThreadContext()` in business logic
+
+**Why this matters:**
+
+Just as you wouldn't `new SqlDatabase()` deep in your code (you'd inject `Database`), you shouldn't hardcode `Dispatchers.Default` or create `runBlocking` contexts deep in your code. This loses the testability and control you gained by injecting the context at the entry point.
+
+**When in doubt:** If you're tempted to use `runBlocking`, `Dispatchers.X`, or create a new `CoroutineScope` deep in your code, ask:
+1. Why doesn't the injected context work?
+2. Should I inject a dispatcher dependency instead?
+3. Am I making tests harder by hardcoding this?
+
 ## Verification Checklists
 
 Use these checklists when reviewing code to ensure complete adherence to dependency injection principles.
