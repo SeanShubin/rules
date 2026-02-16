@@ -1,20 +1,51 @@
 # Code Quality Rules
 
-Architectural and code quality rules for different development paradigms. Each rule set preserves the same spirit of disciplined, maintainable code while respecting the different design constraints of its target paradigm.
+Architectural and code quality rule sets for different development paradigms. Rules are loaded on-demand when you ask Claude Code to check code, not at startup.
 
-## Rule Sets
+## Available Rule Sets
 
-### [OOP / JVM Business Applications](https://github.com/SeanShubin/rules-oop)
+| Name         | Description                                                                                       |
+|--------------|---------------------------------------------------------------------------------------------------|
+| oop          | OOP / JVM business applications (Kotlin, Java, TypeScript). Dependency injection, composition roots, package hierarchy, testability through interfaces. |
+| rust-bevy    | Rust / Bevy game development with ECS. System parameter dependencies, typed events, plugin cohesion, module hierarchy, World-based testing. |
 
-For projects using object-oriented languages (Kotlin, Java, TypeScript) with dependency injection, composition roots, and package hierarchy. Targets business application architecture: cloud services, backend APIs, frontend applications.
+## How It Works
 
-Key concepts: constructor injection, staged dependency injection, event interfaces, package-by-domain, testability through interfaces.
+The system has three layers:
 
-### [Rust / Bevy Game Development](https://github.com/SeanShubin/rules-rust-bevy)
+1. **Global `~/.claude/CLAUDE.md`** contains a ruleset registry mapping names to local directories on your machine, plus behavioral instructions for on-demand loading.
 
-For projects using Rust with the Bevy game engine and ECS (Entity Component System) paradigm. Targets game development architecture: systems, components, resources, plugins.
+2. **Project `.claude/CLAUDE.md`** declares which ruleset the project uses with a single line like `ruleset: oop`. No rule content is loaded at startup.
 
-Key concepts: system parameter dependencies, typed events, plugin cohesion, module hierarchy, World-based testing.
+3. **Rule files** live in their own repositories (e.g., `rules-oop/`, `rules-rust-bevy/`). They are only read when you say "check against rules".
+
+When you say "check against rules" in a project:
+- Claude reads the project's `ruleset:` declaration
+- Looks up the path in the global registry
+- Reads `quick-reference.md` first for the violation checklist
+- Consults individual rule files as needed
+
+## Adding a New Rule Set
+
+1. Create a rule set repository with rule files and a `quick-reference.md`.
+2. Add a row to the registry table in `~/.claude/CLAUDE.md` mapping the name to the local path.
+3. Add a row to the table in this file documenting the name and description.
+
+## Renaming a Rule Set
+
+1. Update the name in the registry table in `~/.claude/CLAUDE.md`.
+2. Update the `ruleset:` line in any project `.claude/CLAUDE.md` files that use it.
+3. Update the name in this file.
+
+## Per-Project Setup
+
+In your project's `.claude/CLAUDE.md`, add:
+
+```
+ruleset: <name>
+```
+
+Where `<name>` matches an entry in the global registry. That's it. No `@rules/` references, no symlinks needed.
 
 ## Philosophy
 
@@ -25,10 +56,4 @@ Both rule sets share the same core principles:
 - Organize by domain, not technical layer
 - Zero violations is the standard
 
-The rules differ in **how** these principles are expressed, because OOP and ECS are fundamentally different paradigms with different composition mechanisms, different performance constraints, and different idioms.
-
-## Using with Claude Code
-
-Each rule set contains its own setup instructions:
-- [OOP setup](https://github.com/SeanShubin/rules-oop/blob/master/claude-code-setup.md)
-- [Rust/Bevy setup](https://github.com/SeanShubin/rules-rust-bevy) (see README for module references)
+The rules differ in how these principles are expressed, because OOP and ECS are fundamentally different paradigms with different composition mechanisms, different performance constraints, and different idioms.
