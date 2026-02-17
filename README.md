@@ -23,7 +23,11 @@ Architectural and code quality rule sets for different development paradigms. Ru
 
 **Key insight:** AI assistants do not automatically apply rules in context. You must explicitly say "check against rules" whether rules are loaded at startup or on-demand. Since explicit invocation is required either way, on-demand loading is optimal.
 
-For detailed rationale, see the cost-benefit analysis in your local documentation.
+**Decision rationale:**
+1. Rules in memory → AI doesn't automatically apply them (observed behavior, documented in `tooling-and-ai.md`)
+2. Explicit invocation required regardless (documented AI limitation)
+3. If explicit invocation needed anyway → no benefit to paying context cost
+4. Therefore → on-demand loading is optimal (same behavior, better performance)
 
 ## Architecture
 
