@@ -37,7 +37,43 @@ Once you both fully understand and agree with the AI's proposal, it is no longer
 ### Use deep tests instead of shallow tests
 The AI's ability to manage complexity in code, perform large refactorings, not miss details, and generate comprehensive fakes, greatly reduces the need to break up tests around implementation detail boundaries.
 This allows us to push our testing all the way up to the application boundaries while still maintaining determinism by faking the foundational integration points.
-Use the staged dependency injection pattern and create fakes for all your integrations, for example, in kotlin, this might look like:
+Use the staged dependency injection pattern and create fakes for all your integrations.
+See the example of the staged dependency injection pattern in the "Patterns" section below.
+
+### Use the test orchestrator pattern
+At some point, the behavior of AI generated code has to be held to account to human understanding.
+We need a feedback loop.
+This is where the test orchestrator pattern comes in.
+The test orchestrator handles all the test infrastructure details, freeing up the test to focus on human auditable behavior.
+This frees up the AI to vastly change implementation details, including the corresponding fakes and stubs, while still proving the code behaves to human specification.
+Here is an example of what the test orchestrator pattern looks like:
+See the example of the test orchestrator pattern in the "Patterns" section below.
+
+### Smoke test a single happy path scenario
+We can test all logic inside our application with deterministic unit tests
+We can test the behavior of things we depend on outside our application with integration tests
+The only remaining places to hide are how we hook up everything together and differences in our production environment.
+Hooking up everything together can be tested with a smoke test.
+Differences in environments can be tested by running that smoke test on a staging enviromnent that is identical to production.
+The smoke test is not for testing logic, so it only needs a single happy path that exercises all the integration points.
+
+### Research Assistant
+I don't have to pour over documentation, follow links, search for articles, etc.
+The AI does all of this mechanical and menial labor of figuring out what information is relevant and what is not, then summarizes the information with code examples specifically tailored to the problem I am trying to solve.
+I can learn and understand new technology much faster with AI than I could on my own.
+
+### Document organizer
+I can document all of my research, values, and decisions.
+I can make changes without worrying about forgetting to update a reference somewhere and introduce lack of internal consistency.
+
+### Mechanical Multiplier
+Once I have made all the decisions, the AI can handle the tedious mechanical details.
+I don't have to worry that this massive change requires me to update the code in hundreds of places, the AI just does that for me.
+I still review every line of code to make sure the AI does not do a single thing I would not have done, but every time I catch something I create a new rule for the AI to follow, so this manual review becomes faster over time, and importantly, much faster than me doing the typing.
+
+## Patterns
+
+### Staged Dependency Injection
 ```kotlin
 // Service class - does work via methods
 class Bootstrap(
@@ -90,36 +126,60 @@ fun execute(args: Array<String>): Int {
 }
 ```
 
-### Use the test orchestrator pattern
-At some point, the behavior of AI generated code has to be held to account to human understanding.
-We need a feedback loop.
-This is where the test orchestrator pattern comes in.
-The test orchestrator handles all the test infrastructure details, freeing up the test to focus on human auditable behavior.
-This frees up the AI to vastly change implementation details, including the corresponding fakes and stubs, while still proving the code behaves to human specification.
-Here is an example of what the test orchestrator pattern looks like:
+### Test Orchestrator
+```java
+@Test
+public void testMessageDigestForDirectory() {
+    // given
+    String pathName = "the-path";
+    int bufferSize = 3;
+    Tester tester = new Tester(bufferSize);
+    tester.addFile("the-path/file-a.txt", "abcdefg");
+    tester.addFile("the-path/file-b.txt", "hij");
+    String expected = "digest for: abc, def, g, hij, klm, n";
+    String expectedEvents =
+            "Processing file 'the-path/file-a.txt' of size 7 bytes\n" +
+            "Processing file 'the-path/file-b.txt' of size 3 bytes";
+
+    // when
+    String actual = tester.messageDigestForDirectory(pathName);
+
+    // then
+    assertEquals(expected, actual);
+    assertEquals(expectedEvents, tester.getEvents());
+}
+
+// Tester inner class
+static class Tester {
+    final MessageDigestStub messageDigest;
+    final FilesStub files;
+    final ProcessingFileEventStub processingFileEvent;
+    final MessageDigestUtilityInverted messageDigestUtility;
+
+    public Tester(int bufferSize) {
+        this.messageDigest = new MessageDigestStub();
+        this.files = new FilesStub();
+        this.processingFileEvent = new ProcessingFileEventStub();
+        this.messageDigestUtility = new MessageDigestUtilityInverted(
+                messageDigest,
+                files,
+                bufferSize,
+                processingFileEvent
+        );
+    }
+
+    void addFile(String fileName, String content) {
+        files.addFile(fileName, content);
+    }
+
+    String messageDigestForDirectory(String pathName) {
+        Path path = Paths.get(pathName);
+        byte[] messageDigestBytes = messageDigestUtility.messageDigestForDirectory(path);
+        return new String(messageDigestBytes);
+    }
+
+    String getEvents() {
+        return String.join("\n", processingFileEvent.events);
+    }
+}
 ```
-TODO: Fix up examples in other rules projects, then add them here
-```
-
-### Smoke test a single happy path scenario
-We can test all logic inside our application with deterministic unit tests
-We can test the behavior of things we depend on outside our application with integration tests
-The only remaining places to hide are how we hook up everything together and differences in our production environment.
-Hooking up everything together can be tested with a smoke test.
-Differences in environments can be tested by running that smoke test on a staging enviromnent that is identical to production.
-The smoke test is not for testing logic, so it only needs a single happy path that exercises all the integration points.
-
-
-### Research Assistant
-I don't have to pour over documentation, follow links, search for articles, etc.
-The AI does all of this mechanical and menial labor of figuring out what information is relevant and what is not, then summarizes the information with code examples specifically tailored to the problem I am trying to solve.
-I can learn and understand new technology much faster with AI than I could on my own.
-
-### Document organizer
-I can document all of my research, values, and decisions.
-I can make changes without worrying about forgetting to update a reference somewhere and introduce lack of internal consistency.
-
-### Mechanical Multiplier
-Once I have made all the decisions, the AI can handle the tedious mechanical details.
-I don't have to worry that this massive change requires me to update the code in hundreds of places, the AI just does that for me.
-I still review every line of code to make sure the AI does not do a single thing I would not have done, but every time I catch something I create a new rule for the AI to follow, so this manual review becomes faster over time, and importantly, much faster than me doing the typing.
