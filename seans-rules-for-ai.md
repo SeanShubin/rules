@@ -17,7 +17,7 @@
 ### Actively engage with AI so that you know what it is actually doing
 You need to establish a feedback loop.
 You may think that the AI is taking care of a lot for you, but the AI is exceptionally capable of giving you something that very plausibly looks like what you asked for, but is in fact, flat wrong.
-The only way to get AI to give you what you wanted, instead of plausibly imitating what you asked for, to keep challenging the code it generates until the code matches what you actually wanted.
+The only way to get AI to give you what you wanted, instead of plausibly imitating what you asked for, is to keep challenging the code it generates until the code matches what you actually wanted.
 A surprising behavior that I get with AI and not with humans, is that when I ask it to explain its architectural or design decisions, it will without ego tell me that its decisions are terrible.
 The AI can understand that code is bad, but does not have the initiative to avoid bad code in the first place.
 You have to actively engage to call out the bad code until you can see for yourself that it is fixed.
@@ -30,7 +30,7 @@ Keep pressing the AI to explain itself until you can tell independently of the A
 
 ### Don't let the AI make decisions
 The AI's decisions will look plausible, but it can only respond probabilistically based on your prompt, it can't know your full context.
-As the AI has access to a vast breadth of knowledge, it is good at suggesting you would not have otherwise thought of.
+As the AI has access to a vast breadth of knowledge, it is good at suggesting things you would not have otherwise thought of.
 The AI can be guided to the right decision eventually, but only after the human challenges its reasoning and its beliefs about what is true.
 Once you both fully understand and agree with the AI's proposal, it is no longer an AI decision, you have taken ownership of the decision.
 
@@ -50,21 +50,21 @@ Here is an example of what the test orchestrator pattern looks like:
 See the example of the test orchestrator pattern in the "Patterns" section below.
 
 ### Smoke test a single happy path scenario
-We can test all logic inside our application with deterministic unit tests
-We can test the behavior of things we depend on outside our application with integration tests
+We can test all logic inside our application with deterministic unit tests.
+We can test the behavior of things we depend on outside our application with integration tests.
 The only remaining places to hide are how we hook up everything together and differences in our production environment.
 Hooking up everything together can be tested with a smoke test.
-Differences in environments can be tested by running that smoke test on a staging enviromnent that is identical to production.
+Differences in environments can be tested by running that smoke test on a staging environment that is identical to production.
 The smoke test is not for testing logic, so it only needs a single happy path that exercises all the integration points.
 
 ### Research Assistant
-I don't have to pour over documentation, follow links, search for articles, etc.
+I don't have to pore over documentation, follow links, search for articles, etc.
 The AI does all of this mechanical and menial labor of figuring out what information is relevant and what is not, then summarizes the information with code examples specifically tailored to the problem I am trying to solve.
 I can learn and understand new technology much faster with AI than I could on my own.
 
 ### Document organizer
 I can document all of my research, values, and decisions.
-I can make changes without worrying about forgetting to update a reference somewhere and introduce lack of internal consistency.
+I can make changes without worrying about forgetting to update a reference somewhere and introducing a lack of internal consistency.
 
 ### Mechanical Multiplier
 Once I have made all the decisions, the AI can handle the tedious mechanical details.
@@ -128,58 +128,138 @@ fun execute(args: Array<String>): Int {
 
 ### Test Orchestrator
 ```java
-@Test
-public void testMessageDigestForDirectory() {
-    // given
-    String pathName = "the-path";
-    int bufferSize = 3;
-    Tester tester = new Tester(bufferSize);
-    tester.addFile("the-path/file-a.txt", "abcdefg");
-    tester.addFile("the-path/file-b.txt", "hij");
-    String expected = "digest for: abc, def, g, hij, klm, n";
-    String expectedEvents =
-            "Processing file 'the-path/file-a.txt' of size 7 bytes\n" +
-            "Processing file 'the-path/file-b.txt' of size 3 bytes";
+public class MessageDigestUtilityInvertedTest {
+    @Test
+    public void testMessageDigestForDirectory() {
+        // given
+        String pathName = "the-path";
+        int bufferSize = 3;
+        Tester tester = new Tester(bufferSize);
+        tester.addFile("the-path/file-a.txt", "abcdefg");
+        tester.addFile("the-path/file-b.txt", "hij");
+        tester.addFile("the-path/file-c.txt", "klmn");
+        String expected = "digest for: abc, def, g, hij, klm, n";
+        String expectedEvents =
+                "Processing file 'the-path/file-a.txt' of size 7 bytes\n" +
+                        "Processing file 'the-path/file-b.txt' of size 3 bytes\n" +
+                        "Processing file 'the-path/file-c.txt' of size 4 bytes";
 
-    // when
-    String actual = tester.messageDigestForDirectory(pathName);
+        // when
+        String actual = tester.messageDigestForDirectory(pathName);
 
-    // then
-    assertEquals(expected, actual);
-    assertEquals(expectedEvents, tester.getEvents());
-}
-
-// Tester inner class
-static class Tester {
-    final MessageDigestStub messageDigest;
-    final FilesStub files;
-    final ProcessingFileEventStub processingFileEvent;
-    final MessageDigestUtilityInverted messageDigestUtility;
-
-    public Tester(int bufferSize) {
-        this.messageDigest = new MessageDigestStub();
-        this.files = new FilesStub();
-        this.processingFileEvent = new ProcessingFileEventStub();
-        this.messageDigestUtility = new MessageDigestUtilityInverted(
-                messageDigest,
-                files,
-                bufferSize,
-                processingFileEvent
-        );
+        // then
+        assertEquals(expected, actual);
+        String actualEvents = tester.getEvents();
+        assertEquals(expectedEvents, actualEvents);
     }
 
-    void addFile(String fileName, String content) {
-        files.addFile(fileName, content);
+    static class Tester {
+        final int bufferSize;
+        final MessageDigestStub messageDigest;
+        final FilesStub files;
+        final ProcessingFileEventStub processingFileEvent;
+        final MessageDigestUtilityInverted messageDigestUtility;
+
+        public Tester(int bufferSize) {
+            this.bufferSize = bufferSize;
+            this.messageDigest = new MessageDigestStub();
+            this.files = new FilesStub();
+            this.processingFileEvent = new ProcessingFileEventStub();
+            this.messageDigestUtility = new MessageDigestUtilityInverted(
+                    messageDigest,
+                    files,
+                    bufferSize,
+                    processingFileEvent
+            );
+        }
+
+        void addFile(String fileName, String content) {
+            files.addFile(fileName, content);
+        }
+
+        String messageDigestForDirectory(String pathName) {
+            Path path = Paths.get(pathName);
+            byte[] messageDigestBytes = messageDigestUtility.messageDigestForDirectory(path);
+            String messageDigestString = new String(messageDigestBytes);
+            return messageDigestString;
+        }
+
+        String getEvents() {
+            return String.join("\n", processingFileEvent.events);
+        }
     }
 
-    String messageDigestForDirectory(String pathName) {
-        Path path = Paths.get(pathName);
-        byte[] messageDigestBytes = messageDigestUtility.messageDigestForDirectory(path);
-        return new String(messageDigestBytes);
+    static class MessageDigestStub extends MessageDigestUnsupportedOperation {
+        final List<String> updateCalls = new ArrayList<>();
+
+        @Override
+        public byte[] digest() {
+            String digestString = "digest for: " + String.join(", ", updateCalls);
+            return digestString.getBytes();
+        }
+
+        @Override
+        public void update(byte[] input, int startOffset, int len) {
+            int endOffset = startOffset + len;
+            byte[] relevant = Arrays.copyOfRange(input, startOffset, endOffset);
+            String relevantAsString = new String(relevant);
+            updateCalls.add(relevantAsString);
+        }
     }
 
-    String getEvents() {
-        return String.join("\n", processingFileEvent.events);
+    static class FilesStub extends FilesUnsupportedOperation {
+        List<String> fileNames = new ArrayList<>();
+        Map<String, String> fileContents = new HashMap<>();
+
+        void addFile(String fileName, String content) {
+            fileNames.add(fileName);
+            fileContents.put(fileName, content);
+        }
+
+        @Override
+        public Path walkFileTree(Path start, FileVisitor<? super Path> visitor) {
+            for (String fileName : fileNames) {
+                Path filePath = Paths.get(fileName);
+                try {
+                    visitor.visitFile(filePath, null);
+                } catch (IOException e) {
+                    throw new RuntimeException(e.getMessage(), e);
+                }
+            }
+            return start;
+        }
+
+        @Override
+        public boolean isRegularFile(Path path, LinkOption... options) {
+            String pathString = path.toString();
+            boolean result = fileContents.containsKey(pathString);
+            return result;
+        }
+
+        @Override
+        public long size(Path path) {
+            return fileContents.get(path.toString()).getBytes().length;
+        }
+
+        @Override
+        public InputStream newInputStream(Path path, OpenOption... options) {
+            String pathString = path.toString();
+            String contents = fileContents.get(pathString);
+            byte[] bytes = contents.getBytes();
+            return new ByteArrayInputStream(bytes);
+        }
+    }
+
+    static class ProcessingFileEventStub implements Consumer<MessageDigestUtilityInverted.ProcessingFileEvent> {
+        List<String> events = new ArrayList<>();
+
+        @Override
+        public void accept(MessageDigestUtilityInverted.ProcessingFileEvent processingFileEvent) {
+            Path path = processingFileEvent.file;
+            long size = processingFileEvent.size;
+            String message = String.format("Processing file '%s' of size %d bytes", path, size);
+            events.add(message);
+        }
     }
 }
 ```
