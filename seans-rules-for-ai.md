@@ -3,7 +3,7 @@
   - Actively engage with AI so that you know what it is actually doing
   - Don't trust anything an AI says
   - Don't let the AI make decisions
-- Changes
+- Testing
   - Use deep tests instead of shallow tests
   - Use the test orchestrator pattern
   - Smoke test a single happy path scenario
