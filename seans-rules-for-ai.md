@@ -1,0 +1,13 @@
+- Sean's Rules for AI
+  - constraints
+    - actively engage with AI so that you know what it is actually doing
+    - don't trust anything an AI says
+    - don't let the AI make decisions
+  - changes
+    - use deep tests instead of shallow tests
+    - use the test orchestrator pattern
+    - smoke test a single happy path scenario
+  - benefits
+    - research assistant
+    - document organizer
+    - mechanical multiplier
