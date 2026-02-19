@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(echo:*)",
+      "Bash(cmd //c \"mklink /J \"\"C:\\\\Users\\\\seans\\\\.claude\\\\rules\\\\shared-standards\"\" \"\"D:\\\\keep\\\\github\\\\sean\\\\rules\"\"\")",
+      "Bash(cmd.exe /c \"mklink /J C:\\\\Users\\\\seans\\\\.claude\\\\rules\\\\shared-standards D:\\\\keep\\\\github\\\\sean\\\\rules\")",
+      "Bash(MSYS_NO_PATHCONV=1 cmd.exe /c \"mklink /J C:\\\\Users\\\\seans\\\\.claude\\\\rules\\\\shared-standards D:\\\\keep\\\\github\\\\sean\\\\rules\")"
+    ]
+  }
+}

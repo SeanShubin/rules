@@ -7,7 +7,7 @@ Architectural and code quality rule sets for different development paradigms. Ru
 | Name         | Repository | Description                                                                                       |
 |--------------|------------|---------------------------------------------------------------------------------------------------|
 | oop          | [rules-oop](https://github.com/SeanShubin/rules-oop) | OOP / JVM business applications (Kotlin, Java, TypeScript). Dependency injection, composition roots, package hierarchy, testability through interfaces. |
-| rust-bevy    | [rules-rust-bevy](https://github.com/SeanShubin/rules-rust-bevy) | Rust / Bevy game development with ECS. System parameter dependencies, typed events, plugin cohesion, module hierarchy, World-based testing. |
+| ecs          | [rules-ecs](https://github.com/SeanShubin/rules-ecs) | ECS architecture for game development (examples use Rust/Bevy). System parameter dependencies, typed events, plugin cohesion, module hierarchy, World-based testing. |
 
 ## Why On-Demand Loading?
 
@@ -49,7 +49,7 @@ No rule content is loaded at startup. The declaration is a simple string referen
 ### 3. Rule Files (separate repositories)
 Rule sets live in their own Git repositories:
 - `rules-oop/` - OOP rule set with `quick-reference.md` and detailed rule files
-- `rules-rust-bevy/` - Rust/Bevy rule set with `quick-reference.md` and detailed rule files
+- `rules-ecs/` - ECS rule set with `quick-reference.md` and detailed rule files
 
 Each repository must contain:
 - `quick-reference.md` at the root (violation checklist)
@@ -64,7 +64,7 @@ Clone the rule sets you want to use to a location on your machine:
 ```bash
 cd ~/github.com/YourName/  # Or wherever you keep repos
 git clone https://github.com/SeanShubin/rules-oop.git
-git clone https://github.com/SeanShubin/rules-rust-bevy.git  # Optional
+git clone https://github.com/SeanShubin/rules-ecs.git  # Optional
 ```
 
 ### Step 2: Create Global Registry
@@ -81,7 +81,7 @@ This registry maps rule set names to their local directories. Rules are loaded o
 | Name      | Path |
 |-----------|------|
 | oop       | /Users/yourname/github.com/YourName/rules-oop |
-| rust-bevy | /Users/yourname/github.com/YourName/rules-rust-bevy |
+| ecs       | /Users/yourname/github.com/YourName/rules-ecs |
 
 ## On-Demand Loading Behavior
 
@@ -122,9 +122,9 @@ cd /path/to/your/project
 echo "ruleset: oop" > .claude/CLAUDE.md
 ```
 
-Or for Rust/Bevy projects:
+Or for ECS projects:
 ```bash
-echo "ruleset: rust-bevy" > .claude/CLAUDE.md
+echo "ruleset: ecs" > .claude/CLAUDE.md
 ```
 
 ### Step 4: Verify Setup
@@ -136,7 +136,7 @@ claude
 ```
 
 Then try:
-1. Say: "What ruleset does this project use?" - Should see "oop" or "rust-bevy"
+1. Say: "What ruleset does this project use?" - Should see "oop" or "ecs"
 2. Say: "Check against rules" - Should load rules on-demand
 3. Verify no performance warnings about large files
 
@@ -198,7 +198,7 @@ Add a row to the registry table in your `~/.claude/CLAUDE.md`:
 | Name      | Path |
 |-----------|------|
 | oop       | /Users/yourname/github.com/YourName/rules-oop |
-| rust-bevy | /Users/yourname/github.com/YourName/rules-rust-bevy |
+| ecs       | /Users/yourname/github.com/YourName/rules-ecs |
 | python-ml | /Users/yourname/github.com/YourName/rules-python-ml |
 ```
 
@@ -282,7 +282,7 @@ cat .claude/CLAUDE.md  # Verify it contains: ruleset: oop
 
 ### Wrong Rules Loading
 
-**Symptom:** Claude loads OOP rules when you expected Rust/Bevy rules.
+**Symptom:** Claude loads OOP rules when you expected ECS rules.
 
 **Cause:** Project declaration doesn't match intended ruleset.
 
@@ -292,7 +292,7 @@ cat .claude/CLAUDE.md  # Verify it contains: ruleset: oop
 cat .claude/CLAUDE.md
 
 # Update if wrong
-echo "ruleset: rust-bevy" > .claude/CLAUDE.md
+echo "ruleset: ecs" > .claude/CLAUDE.md
 ```
 
 ## Philosophy
@@ -306,7 +306,7 @@ All rule sets share core principles:
 
 The rules differ in **how** these principles are expressed:
 - **OOP (Java/Kotlin/TypeScript):** Constructor injection, composition roots, package hierarchy
-- **Rust/Bevy (ECS):** System parameters, resources, typed events, plugin cohesion
+- **ECS (examples use Rust/Bevy):** System parameters, resources, typed events, plugin cohesion
 
 Different paradigms require different implementations of the same underlying principles. OOP and ECS have fundamentally different composition mechanisms, performance constraints, and idioms, so rules are tailored to each paradigm while maintaining philosophical consistency.
 
