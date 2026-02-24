@@ -38,12 +38,19 @@ Once you both fully understand and agree with the AI's proposal, it is no longer
 The AI's ability to manage complexity in code, perform large refactorings, not miss details, and generate comprehensive fakes, greatly reduces the need to break up tests around implementation detail boundaries.
 This allows us to push our testing all the way up to the application boundaries while still maintaining determinism by faking the foundational integration points.
 
+### Use the staged dependency injection pattern
 The staged dependency injection pattern enables deep testing by bundling all external interactions into Integrations.
 In production: `ProductionIntegrations(args)` provides real files, clock, network, etc.
 In tests: `TestIntegrations(testArgs, fakeFiles, fakeClock, capturedOutput)` provides fakes.
 
 Because you swap a single object at the boundary, the entire application runs with fakes—you test through the full dependency chain without mocking internal collaborators.
 This is practical because AI can manage the complexity of comprehensive fakes.
+
+The pattern enforces a key principle: constructors wire references together (no effects), methods do work (effects happen here).
+This makes work vs wiring syntactically visible—when you see a constructor call, nothing happens except wiring; when you see a method call, you know work is being done.
+
+Applications are structured in stages: wire dependencies → do work → wire next stage → do work.
+Each stage's composition root contains only constructor calls, making it obvious that no work happens during wiring.
 See the staged dependency injection pattern in the "Patterns" section below.
 
 ### Use the test orchestrator pattern
