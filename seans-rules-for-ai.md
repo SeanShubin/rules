@@ -5,7 +5,7 @@
   - Don't let the AI make decisions
 - Testing
   - Use deep tests instead of shallow tests
-  - Use the test orchestrator pattern
+  - Use the staged dependency injection and test orchestrator patterns
   - Smoke test a single happy path scenario
 - Benefits
   - Research assistant
@@ -37,17 +37,31 @@ Once you both fully understand and agree with the AI's proposal, it is no longer
 ### Use deep tests instead of shallow tests
 The AI's ability to manage complexity in code, perform large refactorings, not miss details, and generate comprehensive fakes, greatly reduces the need to break up tests around implementation detail boundaries.
 This allows us to push our testing all the way up to the application boundaries while still maintaining determinism by faking the foundational integration points.
-Use the staged dependency injection pattern and create fakes for all your integrations.
-See the example of the staged dependency injection pattern in the "Patterns" section below.
+
+The staged dependency injection pattern enables deep testing by bundling all external interactions into Integrations.
+In production: `ProductionIntegrations(args)` provides real files, clock, network, etc.
+In tests: `TestIntegrations(testArgs, fakeFiles, fakeClock, capturedOutput)` provides fakes.
+
+Because you swap a single object at the boundary, the entire application runs with fakes—you test through the full dependency chain without mocking internal collaborators.
+This is practical because AI can manage the complexity of comprehensive fakes.
+See the staged dependency injection pattern in the "Patterns" section below.
 
 ### Use the test orchestrator pattern
 At some point, the behavior of AI generated code has to be held to account to human understanding.
 We need a feedback loop.
 This is where the test orchestrator pattern comes in.
 The test orchestrator handles all the test infrastructure details, freeing up the test to focus on human auditable behavior.
+
+The orchestrator has three types of methods:
+- **Setup methods**: Configure fake behavior (setupConfigFile, setupCsvFile)
+- **Action methods**: Represent user/system actions (runApplication)
+- **Query methods**: For assertions (outputContains, getOutputLineCount)
+
+You review the orchestrator's API to verify it matches your mental model.
+AI changes everything behind that API—fakes, stubs, implementation—while the test stays the same.
+If the test still passes, behavior is preserved.
 This frees up the AI to vastly change implementation details, including the corresponding fakes and stubs, while still proving the code behaves to human specification.
-Here is an example of what the test orchestrator pattern looks like:
-See the example of the test orchestrator pattern in the "Patterns" section below.
+See the test orchestrator pattern in the "Patterns" section below.
 
 ### Smoke test a single happy path scenario
 We can test all logic inside our application with deterministic unit tests.
@@ -73,23 +87,35 @@ I still review every line of code to make sure the AI does not do a single thing
 
 ## Patterns
 
+These patterns work together to enable effective AI collaboration:
+- **Staged Dependency Injection** makes work syntactically visible
+- **Test Orchestrator** protects tests from implementation churn
+- Combined: AI can radically refactor while tests prove behavior preservation
+
+### Core Principles
+1. **Constructors wire, methods work** - Makes staging explicit
+2. **All boundaries in Integrations** - Enables deep testing
+3. **Tests use orchestrators** - Hides infrastructure complexity
+
 ### Staged Dependency Injection
+
+**The Key Principle:** Constructors wire references together (no effects). Methods do work (effects happen here).
+
+This makes work vs wiring syntactically visible. When you see a constructor call, nothing happens except wiring. When you see a method call, you know work is being done.
+
+**Two Types of Classes:**
+
 ```kotlin
 // Service class - does work via methods
 class Bootstrap(
-    private val integrations: Integrations  // Constructor-injected dependencies
+    private val integrations: Integrations,
+    private val configurationLoader: ConfigurationLoader
 ) {
     private val argsParser = ArgsParser
 
-    fun loadConfiguration(): Configuration {  // Work happens in methods
-        val configBaseName = argsParser.parseConfigBaseName(integrations.commandLineArgs)
-        val loader = ConfigurationLoader(integrations, configBaseName)
-        return loader.load()
-    }
-
-    fun loadConfiguration(configBaseName: String): Configuration {  // Overload for external config source
-        val loader = ConfigurationLoader(integrations, configBaseName)
-        return loader.load()
+    fun loadConfiguration(): Configuration {  // ← Work happens in methods
+        val configPath = argsParser.parseConfigPath(integrations.commandLineArgs)
+        return configurationLoader.load(configPath)
     }
 }
 
@@ -97,169 +123,183 @@ class Bootstrap(
 class BootstrapDependencies(
     integrations: Integrations
 ) {
-    val bootstrap: Bootstrap = Bootstrap(integrations)  // Only constructor calls
-}
-
-// Composition root - only wiring
-class ApplicationDependencies(
-    integrations: Integrations,
-    configuration: Configuration
-) {
     private val files = integrations.files
-    private val clock = integrations.clock
-    // ... more wiring ...
-    val runner: Runnable = Runner(clock, /* ... */)
-    val errorMessageHolder: ErrorMessageHolder = ErrorMessageHolderImpl()
+    private val configurationLoader = ConfigurationLoader(files)
+
+    val bootstrap: Bootstrap = Bootstrap(integrations, configurationLoader)  // ← Only constructors
+}
+```
+
+**Why this works:**
+- `Bootstrap` is a **service class** - has methods that do work
+- `BootstrapDependencies` is a **composition root** - only constructor calls
+- You can see where work happens by looking at method calls
+- Composition roots with only constructors need no tests
+
+**The Full Pattern:**
+
+```kotlin
+// Integrations - all boundary crossings
+interface Integrations {
+    val commandLineArgs: Array<String>
+    val files: Files
+    val emitLine: (String) -> Unit
+    val exitCode: ExitCode
 }
 
 // Entry point orchestrates: wire -> work -> wire -> work
-fun execute(args: Array<String>): Int {
-    val integrations = ProductionIntegrations(args)           // Stage 1: WIRING
+fun runApplication(integrations: Integrations): Int {
+    // Stage 1: Bootstrap - WIRING
+    val bootstrapDeps = BootstrapDependencies(integrations)
+    val configuration = bootstrapDeps.bootstrap.loadConfiguration()  // WORK
 
-    val bootstrapDeps = BootstrapDependencies(integrations)   // Stage 2: WIRING
-    val configuration = bootstrapDeps.bootstrap.loadConfiguration()  // Stage 2: WORK ←
+    // Stage 2: Schema - WIRING
+    val schemaDeps = SchemaDependencies(integrations, configuration)
+    val schema = schemaDeps.schemaLoader.loadSchema()  // WORK
 
-    val appDeps = ApplicationDependencies(integrations, configuration)  // Stage 3: WIRING
-    appDeps.runner.run()  // Stage 3: WORK ←
+    // Stage 3: Application - WIRING
+    val appDeps = ApplicationDependencies(integrations, configuration, schema)
+    appDeps.reportGenerator.generate()  // WORK
 
-    return if (appDeps.errorMessageHolder.errorMessage == null) 0 else 1
+    return integrations.exitCode.value
 }
 ```
 
-### Test Orchestrator
-```java
-public class MessageDigestUtilityInvertedTest {
-    @Test
-    public void testMessageDigestForDirectory() {
-        // given
-        String pathName = "the-path";
-        int bufferSize = 3;
-        Tester tester = new Tester(bufferSize);
-        tester.addFile("the-path/file-a.txt", "abcdefg");
-        tester.addFile("the-path/file-b.txt", "hij");
-        tester.addFile("the-path/file-c.txt", "klmn");
-        String expected = "digest for: abc, def, g, hij, klm, n";
-        String expectedEvents =
-                "Processing file 'the-path/file-a.txt' of size 7 bytes\n" +
-                        "Processing file 'the-path/file-b.txt' of size 3 bytes\n" +
-                        "Processing file 'the-path/file-c.txt' of size 4 bytes";
+**Key aspects:**
+- **Three stages** (shows the pattern scales to any number of stages)
+- **Inline comments** explicitly mark WIRING vs WORK
+- **Each stage follows the same rhythm**: create Dependencies → call method
+- **Later stages can depend on multiple earlier results** (ApplicationDependencies takes integrations, configuration, AND schema)
+- **Entry point makes the sequence explicit** - not buried in constructor chains
 
-        // when
-        String actual = tester.messageDigestForDirectory(pathName);
+**Why constructors must not do work:**
 
-        // then
-        assertEquals(expected, actual);
-        String actualEvents = tester.getEvents();
-        assertEquals(expectedEvents, actualEvents);
+When constructors perform I/O, parsing, or logic, that work is hidden from callers. `val bootstrap = Bootstrap(integrations)` looks like pure wiring but could secretly read files, parse config, and validate inputs. The caller cannot tell whether constructing the object is cheap or expensive.
+
+With work in methods, `val bootstrap = Bootstrap(integrations)` is obviously cheap (just stores a reference), while `val config = bootstrap.loadConfiguration()` is obviously doing work (method call). You can trace execution by looking at method calls.
+
+**How this enables deep testing:**
+
+In production:
+```kotlin
+val integrations: Integrations = ProductionIntegrations(args)
+val exitCode = runApplication(integrations)
+```
+
+In tests:
+```kotlin
+val testIntegrations: Integrations = TestIntegrations(
+    commandLineArgs = testArgs,
+    files = fakeFiles,
+    emitLine = { line -> capturedOutput.add(line) },
+    exitCode = ExitCodeImpl()
+)
+val exitCode = runApplication(testIntegrations)
+```
+
+You swap a single object at the boundary. The entire application runs with fakes - you test through the full dependency chain without mocking internal collaborators. This is practical because AI can manage the complexity of comprehensive fakes.
+
+### Test Orchestrator Pattern
+
+**Purpose:** Hide infrastructure complexity, expose domain-focused test API.
+
+The orchestrator makes tests readable, maintainable, and resilient to implementation changes. You review the orchestrator's API to verify it matches your mental model. AI changes everything behind that API - fakes, stubs, implementation - while the test stays the same. If the test still passes, behavior is preserved.
+
+**The Three Method Types:**
+- **Setup methods**: Configure fake behavior (setupConfigFile, setupCsvFile)
+- **Action methods**: Represent user/system actions (runApplication)
+- **Query methods**: For assertions (outputContains, getOutputLineCount)
+
+**Example:**
+
+```kotlin
+class ApplicationTester {
+    private val fakeFileContents = mutableMapOf<String, List<String>>()
+    private val capturedOutput = mutableListOf<String>()
+
+    // Setup methods - configure fake behavior
+    fun setupConfigFile(fileName: String, csvPath: String, columns: String, format: String) {
+        val lines = listOf(
+            "csv-path=$csvPath",
+            "columns=$columns",
+            "format=$format"
+        )
+        fakeFileContents[fileName] = lines
     }
 
-    static class Tester {
-        final int bufferSize;
-        final MessageDigestStub messageDigest;
-        final FilesStub files;
-        final ProcessingFileEventStub processingFileEvent;
-        final MessageDigestUtilityInverted messageDigestUtility;
-
-        public Tester(int bufferSize) {
-            this.bufferSize = bufferSize;
-            this.messageDigest = new MessageDigestStub();
-            this.files = new FilesStub();
-            this.processingFileEvent = new ProcessingFileEventStub();
-            this.messageDigestUtility = new MessageDigestUtilityInverted(
-                    messageDigest,
-                    files,
-                    bufferSize,
-                    processingFileEvent
-            );
-        }
-
-        void addFile(String fileName, String content) {
-            files.addFile(fileName, content);
-        }
-
-        String messageDigestForDirectory(String pathName) {
-            Path path = Paths.get(pathName);
-            byte[] messageDigestBytes = messageDigestUtility.messageDigestForDirectory(path);
-            String messageDigestString = new String(messageDigestBytes);
-            return messageDigestString;
-        }
-
-        String getEvents() {
-            return String.join("\n", processingFileEvent.events);
-        }
+    fun setupCsvFile(fileName: String, header: List<String>, rows: List<List<String>>) {
+        val headerLine = header.joinToString(",")
+        val dataLines = rows.map { row -> row.joinToString(",") }
+        fakeFileContents[fileName] = listOf(headerLine) + dataLines
     }
 
-    static class MessageDigestStub extends MessageDigestUnsupportedOperation {
-        final List<String> updateCalls = new ArrayList<>();
-
-        @Override
-        public byte[] digest() {
-            String digestString = "digest for: " + String.join(", ", updateCalls);
-            return digestString.getBytes();
-        }
-
-        @Override
-        public void update(byte[] input, int startOffset, int len) {
-            int endOffset = startOffset + len;
-            byte[] relevant = Arrays.copyOfRange(input, startOffset, endOffset);
-            String relevantAsString = new String(relevant);
-            updateCalls.add(relevantAsString);
-        }
+    // Action method - returns exit code
+    fun runApplication(configFileName: String): Int {
+        val fakeFiles = FakeFiles(fakeFileContents)
+        val exitCode = ExitCodeImpl()
+        val testIntegrations: Integrations = TestIntegrations(
+            commandLineArgs = arrayOf(configFileName),
+            files = fakeFiles,
+            emitLine = { line -> capturedOutput.add(line) },
+            exitCode = exitCode
+        )
+        return com.seanshubin.csv.report.console.runApplication(testIntegrations)
     }
 
-    static class FilesStub extends FilesUnsupportedOperation {
-        List<String> fileNames = new ArrayList<>();
-        Map<String, String> fileContents = new HashMap<>();
-
-        void addFile(String fileName, String content) {
-            fileNames.add(fileName);
-            fileContents.put(fileName, content);
-        }
-
-        @Override
-        public Path walkFileTree(Path start, FileVisitor<? super Path> visitor) {
-            for (String fileName : fileNames) {
-                Path filePath = Paths.get(fileName);
-                try {
-                    visitor.visitFile(filePath, null);
-                } catch (IOException e) {
-                    throw new RuntimeException(e.getMessage(), e);
-                }
-            }
-            return start;
-        }
-
-        @Override
-        public boolean isRegularFile(Path path, LinkOption... options) {
-            String pathString = path.toString();
-            boolean result = fileContents.containsKey(pathString);
-            return result;
-        }
-
-        @Override
-        public long size(Path path) {
-            return fileContents.get(path.toString()).getBytes().length;
-        }
-
-        @Override
-        public InputStream newInputStream(Path path, OpenOption... options) {
-            String pathString = path.toString();
-            String contents = fileContents.get(pathString);
-            byte[] bytes = contents.getBytes();
-            return new ByteArrayInputStream(bytes);
-        }
+    // Query methods - for assertions
+    fun outputContains(text: String): Boolean {
+        return capturedOutput.any { it.contains(text) }
     }
 
-    static class ProcessingFileEventStub implements Consumer<MessageDigestUtilityInverted.ProcessingFileEvent> {
-        List<String> events = new ArrayList<>();
+    fun getOutputLineCount(): Int = capturedOutput.size
+}
 
-        @Override
-        public void accept(MessageDigestUtilityInverted.ProcessingFileEvent processingFileEvent) {
-            Path path = processingFileEvent.file;
-            long size = processingFileEvent.size;
-            String message = String.format("Processing file '%s' of size %d bytes", path, size);
-            events.add(message);
-        }
-    }
+// Test using orchestrator
+@Test
+fun `full application flow with fake integrations`() {
+    // given
+    val tester = ApplicationTester()
+    tester.setupConfigFile("test-config.txt",
+        csvPath = "test-data.csv",
+        columns = "name,department",
+        format = "TABLE"
+    )
+    tester.setupCsvFile("test-data.csv",
+        header = listOf("name", "age", "department", "salary"),
+        rows = listOf(
+            listOf("Alice", "28", "Engineering", "75000"),
+            listOf("Bob", "35", "Marketing", "82000")
+        )
+    )
+
+    // when
+    tester.runApplication("test-config.txt")
+
+    // then
+    assertTrue(tester.outputContains("Alice"))
+    assertTrue(tester.outputContains("Engineering"))
+    assertTrue(!tester.outputContains("salary"))  // Filtered out
+    assertEquals(5, tester.getOutputLineCount())
 }
 ```
+
+**What the ApplicationTester hides:**
+- FakeFiles construction
+- ExitCodeImpl creation
+- TestIntegrations wiring
+- Output capture mechanism
+- String parsing and matching logic
+
+**What tests see:**
+- `setupConfigFile(fileName, csvPath, columns, format)`
+- `setupCsvFile(fileName, header, rows)`
+- `runApplication(configFileName)` → Int
+- `outputContains(text)` → Boolean
+- `getOutputLineCount()` → Int
+
+**Why this works with AI:**
+- Tests read like domain specifications, not technical implementation guides
+- AI can radically change implementation details (file I/O, parsing, formatting)
+- AI can regenerate all fakes and stubs as needed
+- Tests remain unchanged and prove behavior is preserved
+- You only review the orchestrator's API, not every line of fake implementation
