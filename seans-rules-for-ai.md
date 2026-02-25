@@ -28,6 +28,11 @@ This does not mean that the AI can't get to the right answer eventually.
 It means that the AI has no way to tell the difference between correct and incorrect answers without a human challenging it.
 Keep pressing the AI to explain itself until you can tell independently of the AI that the final answer is true.
 
+This validation approach works even when AI generates extensive code including test infrastructure.
+You validate through human-readable contracts (like the test orchestrator API) and independent observation (test results).
+AI can generate comprehensive fakes and test scaffolding because bugs in that infrastructure will manifest as test failures that don't match your mental model of correct behavior.
+The test itself is your specification—if scaffolding is broken, the test outcome won't align with your understanding.
+
 ### Don't let the AI make decisions
 The AI's decisions will look plausible, but it can only respond probabilistically based on your prompt, it can't know your full context.
 As the AI has access to a vast breadth of knowledge, it is good at suggesting things you would not have otherwise thought of.
@@ -68,6 +73,11 @@ You review the orchestrator's API to verify it matches your mental model.
 AI changes everything behind that API—fakes, stubs, implementation—while the test stays the same.
 If the test still passes, behavior is preserved.
 This frees up the AI to vastly change implementation details, including the corresponding fakes and stubs, while still proving the code behaves to human specification.
+
+The orchestrator enables validation of AI-generated test infrastructure.
+When you read a test, you can verify it matches your mental model of correct behavior.
+If bugs exist in the test scaffolding (fakes, stubs, orchestrator implementation), they manifest as test failures or unexpected behavior that conflicts with the test specification.
+This closes the validation loop: you never trust the AI's test code, but you validate it through human-readable test specifications and observable test outcomes.
 See the test orchestrator pattern in the "Patterns" section below.
 
 ### Smoke test a single happy path scenario
@@ -310,3 +320,17 @@ fun `full application flow with fake integrations`() {
 - AI can regenerate all fakes and stubs as needed
 - Tests remain unchanged and prove behavior is preserved
 - You only review the orchestrator's API, not every line of fake implementation
+
+**How this maintains "don't trust AI":**
+The orchestrator doesn't require you to trust AI-generated fakes and stubs.
+Instead, you validate through two mechanisms:
+1. **Review the orchestrator API** - Verify it matches your mental model of the domain
+2. **Read the tests** - Ensure they specify correct behavior in human terms
+
+Bugs in AI-generated test infrastructure reveal themselves as:
+- Tests that fail when they shouldn't
+- Tests that pass when they should fail
+- Test outcomes that conflict with the test specification
+
+You push the AI to explain and fix issues until you can independently validate that both the implementation and test infrastructure are correct.
+This maintains the "don't trust AI" principle while leveraging AI's ability to manage complexity.
