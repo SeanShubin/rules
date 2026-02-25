@@ -16,14 +16,14 @@
 
 ### Actively engage with AI so that you know what it is actually doing
 You need to establish a feedback loop.
-You may think that the AI is taking care of a lot for you, but the AI is exceptionally capable of giving you something that very plausibly looks like what you asked for, but is in fact, flat wrong.
+You may think that the AI is taking care of a lot for you, but the AI is exceptionally capable of giving you something that very plausibly looks like what you asked for, yet is in fact, flat wrong.
 The only way to get AI to give you what you wanted, instead of plausibly imitating what you asked for, is to keep challenging the code it generates until the code matches what you actually wanted.
 A surprising behavior that I get with AI and not with humans, is that when I ask it to explain its architectural or design decisions, it will without ego tell me that its decisions are terrible.
 The AI can understand that code is bad, but does not have the initiative to avoid bad code in the first place.
 You have to actively engage to call out the bad code until you can see for yourself that it is fixed.
 
 ### Don't trust anything an AI says
-The AI is optimized for generating plausible sounding answers, not true answers.
+The AI is optimized for generating plausible-sounding answers, not true answers.
 This does not mean that the AI can't get to the right answer eventually.
 It means that the AI has no way to tell the difference between correct and incorrect answers without a human challenging it.
 Keep pressing the AI to explain itself until you can tell independently of the AI that the final answer is true.
@@ -54,7 +54,7 @@ Each stage's composition root contains only constructor calls, making it obvious
 See the staged dependency injection pattern in the "Patterns" section below.
 
 ### Use the test orchestrator pattern
-At some point, the behavior of AI generated code has to be held to account to human understanding.
+At some point, the behavior of AI-generated code has to be held to account to human understanding.
 We need a feedback loop.
 This is where the test orchestrator pattern comes in.
 The test orchestrator handles all the test infrastructure details, freeing up the test to focus on human auditable behavior.
@@ -83,7 +83,7 @@ I don't have to pore over documentation, follow links, search for articles, etc.
 The AI does all of this mechanical and menial labor of figuring out what information is relevant and what is not, then summarizes the information with code examples specifically tailored to the problem I am trying to solve.
 I can learn and understand new technology much faster with AI than I could on my own.
 
-### Document organizer
+### Document Organizer
 I can document all of my research, values, and decisions.
 I can make changes without worrying about forgetting to update a reference somewhere and introducing a lack of internal consistency.
 
@@ -204,13 +204,13 @@ val testIntegrations: Integrations = TestIntegrations(
 val exitCode = runApplication(testIntegrations)
 ```
 
-You swap a single object at the boundary. The entire application runs with fakes - you test through the full dependency chain without mocking internal collaborators. This is practical because AI can manage the complexity of comprehensive fakes.
+You swap a single object at the boundary. The entire application runs with fakes—you test through the full dependency chain without mocking internal collaborators. This is practical because AI can manage the complexity of comprehensive fakes.
 
 ### Test Orchestrator Pattern
 
 **Purpose:** Hide infrastructure complexity, expose domain-focused test API.
 
-The orchestrator makes tests readable, maintainable, and resilient to implementation changes. You review the orchestrator's API to verify it matches your mental model. AI changes everything behind that API - fakes, stubs, implementation - while the test stays the same. If the test still passes, behavior is preserved.
+The orchestrator makes tests readable, maintainable, and resilient to implementation changes. You review the orchestrator's API to verify it matches your mental model. AI changes everything behind that API—fakes, stubs, implementation—while the test stays the same. If the test still passes, behavior is preserved.
 
 **The Three Method Types:**
 - **Setup methods**: Configure fake behavior (setupConfigFile, setupCsvFile)
