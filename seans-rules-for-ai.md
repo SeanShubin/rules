@@ -28,6 +28,14 @@ This does not mean that the AI can't get to the right answer eventually.
 It means that the AI has no way to tell the difference between correct and incorrect answers without a human challenging it.
 Keep pressing the AI to explain itself until you can tell independently of the AI that the final answer is true.
 
+This process works remarkably well in practice.
+The AI initiates ideas—often ones you wouldn't have thought of yourself.
+You push the AI to explain its reasoning, its assumptions, and its conclusions.
+You validate everything through external means: running the code, checking documentation, applying logical reasoning, observing test results—anything except simply believing what the AI tells you.
+Through this process, you arrive at conclusions you trust, even though some were AI-initiated.
+The key distinction: you never trusted the AI itself, but you do trust the conclusions you independently validated.
+The AI was a catalyst for ideas and a tireless explainer, but validation always came from outside the AI.
+
 This validation approach works even when AI generates extensive code including test infrastructure.
 You validate through human-readable contracts (like the test orchestrator API) and independent observation (test results).
 AI can generate comprehensive fakes and test scaffolding because bugs in that infrastructure will manifest as test failures that don't match your mental model of correct behavior.
