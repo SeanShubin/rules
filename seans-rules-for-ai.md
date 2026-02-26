@@ -4,7 +4,7 @@
   - Don't trust anything an AI says
   - Don't let the AI make decisions
 - Testing
-  - Use deep tests instead of shallow tests
+  - Test behavior units, not compilation units
   - Use the staged dependency injection pattern
   - Use the test orchestrator pattern
 - Benefits
@@ -47,9 +47,14 @@ As the AI has access to a vast breadth of knowledge, it is good at suggesting th
 The AI can be guided to the right decision eventually, but only after the human challenges its reasoning and its beliefs about what is true.
 Once you both fully understand and agree with the AI's proposal, it is no longer an AI decision, you have taken ownership of the decision.
 
-### Use deep tests instead of shallow tests
-The AI's ability to manage complexity in code, perform large refactorings, not miss details, and generate comprehensive fakes, greatly reduces the need to break up tests around implementation detail boundaries.
-This allows us to push our testing all the way up to the application boundaries while still maintaining determinism by faking the foundational integration points.
+### Test behavior units, not compilation units
+A unit test tests a unit of behavior, not a compilation unit (class/file).
+The one-test-per-class pattern ties tests to implementation details, making code harder to change—the opposite of what tests should do.
+Tests should enable refactoring, not prevent it.
+
+AI's ability to manage complexity and generate comprehensive fakes lets us test entire behaviors at application boundaries.
+We fake external dependencies (files, clock, network) but test through the full internal dependency chain.
+Internal structure—whether one class or twenty—is implementation detail that tests should ignore.
 
 ### Use the staged dependency injection pattern
 The staged dependency injection pattern enables deep testing by bundling all external interactions into Integrations.
