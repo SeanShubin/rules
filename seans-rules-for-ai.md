@@ -5,8 +5,8 @@
   - Don't let the AI make decisions
 - Testing
   - Use deep tests instead of shallow tests
-  - Use the staged dependency injection and test orchestrator patterns
-  - Smoke test a single happy path scenario
+  - Use the staged dependency injection pattern
+  - Use the test orchestrator pattern
 - Benefits
   - Research assistant
   - Document organizer
@@ -87,14 +87,6 @@ When you read a test, you can verify it matches your mental model of correct beh
 If bugs exist in the test scaffolding (fakes, stubs, orchestrator implementation), they manifest as test failures or unexpected behavior that conflicts with the test specification.
 This closes the validation loop: you never trust the AI's test code, but you validate it through human-readable test specifications and observable test outcomes.
 See the test orchestrator pattern in the "Patterns" section below.
-
-### Smoke test a single happy path scenario
-We can test all logic inside our application with deterministic unit tests.
-We can test the behavior of things we depend on outside our application with integration tests.
-The only remaining places to hide are how we hook up everything together and differences in our production environment.
-Hooking up everything together can be tested with a smoke test.
-Differences in environments can be tested by running that smoke test on a staging environment that is identical to production.
-The smoke test is not for testing logic, so it only needs a single happy path that exercises all the integration points.
 
 ### Research Assistant
 I don't have to pore over documentation, follow links, search for articles, etc.
