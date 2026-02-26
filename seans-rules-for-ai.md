@@ -56,6 +56,10 @@ AI's ability to manage complexity and generate comprehensive fakes lets us test 
 We fake external dependencies (files, clock, network) but test through the full internal dependency chain.
 Internal structure—whether one class or twenty—is implementation detail that tests should ignore.
 
+The "unit" in unit testing is a behavioral unit, not a compilation unit, so what you are really trying to do is test a coherent piece of behavior in isolation from external dependencies.
+Testing the full behavior through a real internal dependency chain with fake external dependencies is not BDD—it is simply correct unit testing.
+BDD has similarities to correct unit testing, but BDD typically refers to a more heavyweight methodology involving natural language specifications and special tooling.
+
 ### Use the staged dependency injection pattern
 The staged dependency injection pattern enables deep testing by bundling all external interactions into Integrations.
 In production: `ProductionIntegrations(args)` provides real files, clock, network, etc.
