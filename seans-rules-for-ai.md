@@ -37,7 +37,7 @@ The key distinction: you never trusted the AI itself, but you do trust the concl
 The AI was a catalyst for ideas and a tireless explainer, but validation always came from outside the AI.
 
 This validation approach works even when AI generates extensive code including test infrastructure.
-You validate through human-readable contracts (like the test orchestrator API) and independent observation (test results).
+You validate through human-readable contracts (like the orchestrator's methods) and independent observation (test results).
 AI can generate comprehensive fakes and test scaffolding because bugs in that infrastructure will manifest as test failures that don't match your mental model of correct behavior.
 The test itself is your specification—if scaffolding is broken, the test outcome won't align with your understanding.
 
@@ -86,8 +86,8 @@ The orchestrator has three types of methods:
 - **Action methods**: Represent user/system actions (runApplication)
 - **Query methods**: For assertions (outputContains, getOutputLineCount)
 
-You review the orchestrator's API to verify it matches your mental model.
-AI changes everything behind that API—fakes, stubs, implementation—while the test stays the same.
+You review the orchestrator's methods to verify they match your mental model.
+AI changes everything behind those methods—fakes, stubs, implementation—while the test stays the same.
 If the test still passes, behavior is preserved.
 This frees up the AI to vastly change implementation details, including the corresponding fakes and stubs, while still proving the code behaves to human specification.
 
@@ -227,9 +227,9 @@ You swap a single object at the boundary. The entire application runs with fakes
 
 ### Test Orchestrator Pattern
 
-**Purpose:** Hide infrastructure complexity, expose domain-focused test API.
+**Purpose:** Hide infrastructure complexity, expose domain-focused test methods.
 
-The orchestrator makes tests readable, maintainable, and resilient to implementation changes. You review the orchestrator's API to verify it matches your mental model. AI changes everything behind that API—fakes, stubs, implementation—while the test stays the same. If the test still passes, behavior is preserved.
+The orchestrator makes tests readable, maintainable, and resilient to implementation changes. You review the orchestrator's methods to verify they match your mental model. AI changes everything behind those methods—fakes, stubs, implementation—while the test stays the same. If the test still passes, behavior is preserved.
 
 **The Three Method Types:**
 - **Setup methods**: Configure fake behavior (setupConfigFile, setupCsvFile)
@@ -328,12 +328,12 @@ fun `full application flow with fake integrations`() {
 - AI can radically change implementation details (file I/O, parsing, formatting)
 - AI can regenerate all fakes and stubs as needed
 - Tests remain unchanged and prove behavior is preserved
-- You only review the orchestrator's API, not every line of fake implementation
+- You only review the orchestrator's methods, not every line of fake implementation
 
 **How this maintains "don't trust AI":**
 The orchestrator doesn't require you to trust AI-generated fakes and stubs.
 Instead, you validate through two mechanisms:
-1. **Review the orchestrator API** - Verify it matches your mental model of the domain
+1. **Review the orchestrator's methods** - Verify they match your mental model of the domain
 2. **Read the tests** - Ensure they specify correct behavior in human terms
 
 Bugs in AI-generated test infrastructure reveal themselves as:
