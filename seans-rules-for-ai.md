@@ -1,6 +1,6 @@
 # Sean's Rules for AI
 - Constraints
-  - Actively engage with AI so that you know what it is actually doing
+  - Don't accept code from AI you would not have written yourself 
   - Don't trust anything an AI says
   - Don't let the AI make decisions
 - Testing
@@ -14,13 +14,18 @@
 
 ## Details
 
-### Actively engage with AI so that you know what it is actually doing
-You need to establish a feedback loop.
-You may think that the AI is taking care of a lot for you, but the AI is exceptionally capable of giving you something that very plausibly looks like what you asked for, yet is in fact, flat wrong.
-The only way to get AI to give you what you wanted, instead of plausibly imitating what you asked for, is to keep challenging the code it generates until the code matches what you actually wanted.
-A surprising behavior that I get with AI and not with humans, is that when I ask it to explain its architectural or design decisions, it will without ego tell me that its decisions are terrible.
-The AI can understand that code is bad, but does not have the initiative to avoid bad code in the first place.
-You have to actively engage to call out the bad code until you can see for yourself that it is fixed.
+### Don't accept code from AI you would not have written yourself
+AI-generated code is your responsibility the moment you accept it.
+Apply the same standards to AI code that you would to your own—if you wouldn't write it, don't accept it.
+This means understanding what the code does, why it works, and whether it meets your quality bar.
+
+AI excels at generating plausible code that looks correct but may be fundamentally wrong.
+When you review AI code and find issues—poor design, unclear logic, or outright bugs—challenge it.
+Surprisingly, AI will often admit its decisions are terrible when pressed to explain them.
+The AI can recognize bad code when prompted, but lacks initiative to avoid it proactively.
+
+Keep challenging until you see for yourself that the code is something you would have written.
+This active engagement is how you maintain standards: by refusing to accept anything below your bar.
 
 ### Don't trust anything an AI says
 The AI is optimized for generating plausible-sounding answers, not true answers.
