@@ -18,7 +18,7 @@ When humans encounter incomprehensible architecture, they experience genuine con
 1. Pattern-matches against similar-looking code
 2. Makes plausible inferences based on structure
 3. Generates code that looks reasonable
-4. Expresses confidence proportional to pattern match quality
+4. Expresses confidence proportional to pattern match quality, not code quality
 
 **The architectural death spiral:**
 - Human writes or tolerates poor architecture
@@ -66,7 +66,7 @@ But only when explicitly triggered. The same capabilities that exist during chal
 
 **Pattern matching first, thinking second:**
 - Initial proposal: Quick pattern match, "reasonable" solution
-- After challenge: Deep analysis using SOLID principles, proper design
+- After challenge: Rigorous evaluation against the architectural principles that actually matter for this context
 - The capabilities existed in both situations but weren't applied initially
 
 **Checklist exists but isn't followed:**
@@ -91,7 +91,7 @@ You waste time investigating why something didn't work, only to discover AI didn
 **Key insight:** AI lacks initiative to be rigorous. Capabilities exist but must be explicitly invoked. Don't assume AI will "obviously" check basic things—explicitly tell it to.
 
 **Mitigation strategies:**
-- Explicitly request rigorous evaluation upfront: "Evaluate against SOLID principles before proposing"
+- Explicitly request rigorous evaluation upfront: "Evaluate against the architectural principles that matter for this context before proposing"
 - Challenge initial proposals: "Why this approach instead of X?"
 - Require systematic verification: "Check each item in your checklist"
 - Use explicit rule invocation: "Check this code against rules" (not just "review this code")
