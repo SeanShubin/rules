@@ -11,6 +11,10 @@
   - Research assistant
   - Document organizer
   - Mechanical multiplier
+- Traps
+  - The Replication Trap
+  - The Initiative Trap
+  - The Confidence Trap
 
 ## Details
 
