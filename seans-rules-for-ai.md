@@ -391,26 +391,43 @@ class BootstrapDependencies(
 // Integrations - all boundary crossings
 interface Integrations {
     val commandLineArgs: Array<String>
-    val files: Files
+    val files: FilesContract
+    val messageDigest: MessageDigestContract
+    val httpClient: HttpClientContract
+    val sleep: (Long) -> Unit
+    val clock: () -> Instant
     val emitLine: (String) -> Unit
     val exitCode: ExitCode
 }
 
-// Entry point orchestrates: wire -> work -> wire -> work
-fun runApplication(integrations: Integrations): Int {
-    // Stage 1: Bootstrap - WIRING
-    val bootstrapDeps = BootstrapDependencies(integrations)
-    val configuration = bootstrapDeps.bootstrap.loadConfiguration()  // WORK
+// Pure happy path - no exception handling
+fun runApplication(integrations: Integrations) {
+    // Stage 1: Bootstrap
+    val bootstrapDeps = BootstrapDependencies(integrations)  // wiring
+    val configuration = bootstrapDeps.bootstrap.loadConfiguration()  // work
 
-    // Stage 2: Schema - WIRING
-    val schemaDeps = SchemaDependencies(integrations, configuration)
-    val schema = schemaDeps.schemaLoader.loadSchema()  // WORK
+    // Stage 2: Manifest Building
+    val manifestDeps = ManifestDependencies(integrations, configuration)  // wiring
+    val manifest = manifestDeps.manifestBuilder.buildManifest()  // work
 
-    // Stage 3: Application - WIRING
-    val appDeps = ApplicationDependencies(integrations, configuration, schema)
-    appDeps.reportGenerator.generate()  // WORK
+    // Stage 3: Application
+    val appDeps = ApplicationDependencies(integrations, configuration, manifest)  // wiring
+    appDeps.manifestUploader.upload()  // work
+}
 
-    return integrations.exitCode.value
+// Exception handler wraps happy path
+fun execute(integrations: Integrations): Int {
+    return try {
+        runApplication(integrations)
+        ExitCodes.SUCCESS
+    } catch (e: ApplicationException) {
+        System.err.println("Error: ${e.message}")
+        e.exitCode
+    } catch (e: Exception) {
+        System.err.println("Unexpected error: ${e.message}")
+        e.printStackTrace()
+        ExitCodes.GENERAL_ERROR
+    }
 }
 ```
 
@@ -440,10 +457,14 @@ In tests:
 val testIntegrations: Integrations = TestIntegrations(
     commandLineArgs = testArgs,
     files = fakeFiles,
+    messageDigest = fakeMessageDigest,
+    httpClient = fakeHttpClient,
+    sleep = { millis -> retryIntervals.add(millis) },
+    clock = fakeClock,
     emitLine = { line -> capturedOutput.add(line) },
     exitCode = ExitCodeImpl()
 )
-val exitCode = runApplication(testIntegrations)
+val exitCode = execute(testIntegrations)
 ```
 
 You swap a single object at the boundary. The entire application runs with fakes—you test through the full dependency chain without mocking internal collaborators. This is practical because AI can manage the complexity of comprehensive fakes.
@@ -462,37 +483,72 @@ The orchestrator makes tests readable, maintainable, and resilient to implementa
 **Example:**
 
 ```kotlin
-class ApplicationTester {
+class ApplicationTester(
+    private val applicationRunner: (Integrations) -> Int
+) {
     private val fakeFileContents = mutableMapOf<String, List<String>>()
+    private val fakeBinaryFiles = mutableMapOf<String, ByteArray>()
     private val capturedOutput = mutableListOf<String>()
+    private val retryIntervals = mutableListOf<Long>()
+    private var fakeHttpClient: FakeHttpClient = FakeHttpClient()
+    private var fakeClock: () -> Instant = { Instant.parse("2024-01-15T10:30:00Z") }
 
     // Setup methods - configure fake behavior
-    fun setupConfigFile(fileName: String, csvPath: String, columns: String, format: String) {
-        val lines = listOf(
-            "csv-path=$csvPath",
-            "columns=$columns",
-            "format=$format"
+    fun setupConfigFile(
+        fileName: String,
+        sourceDirectory: String,
+        outputFormat: String,
+        archiveServerUrl: String,
+        maxRetries: Int = 3,
+        retryDelayMillis: Long = 1000,
+        bufferSize: Int = 8192
+    ) {
+        val lines = mutableListOf(
+            "# Test configuration",
+            "source-directory=$sourceDirectory",
+            "output-format=$outputFormat",
+            "archive-server-url=$archiveServerUrl",
+            "max-retries=$maxRetries",
+            "retry-delay-millis=$retryDelayMillis",
+            "buffer-size=$bufferSize"
         )
         fakeFileContents[fileName] = lines
     }
 
-    fun setupCsvFile(fileName: String, header: List<String>, rows: List<List<String>>) {
-        val headerLine = header.joinToString(",")
-        val dataLines = rows.map { row -> row.joinToString(",") }
-        fakeFileContents[fileName] = listOf(headerLine) + dataLines
+    fun setupSourceFile(fileName: String, content: String) {
+        fakeBinaryFiles[fileName] = content.toByteArray()
+    }
+
+    fun setupHttpClient(timesToFailBeforeSuccess: Int) {
+        fakeHttpClient = FakeHttpClient(timesToFailBeforeSuccess)
+    }
+
+    fun setClock(instant: Instant) {
+        fakeClock = { instant }
     }
 
     // Action method - returns exit code
     fun runApplication(configFileName: String): Int {
         val fakeFiles = FakeFiles(fakeFileContents)
+        fakeBinaryFiles.forEach { (fileName, content) ->
+            fakeFiles.addBinaryFile(fileName, content)
+        }
+
+        val fakeMessageDigest = FakeMessageDigest()
         val exitCode = ExitCodeImpl()
+
         val testIntegrations: Integrations = TestIntegrations(
             commandLineArgs = arrayOf(configFileName),
             files = fakeFiles,
+            messageDigest = fakeMessageDigest,
+            httpClient = fakeHttpClient,
+            sleep = { millis -> retryIntervals.add(millis) },
+            clock = fakeClock,
             emitLine = { line -> capturedOutput.add(line) },
             exitCode = exitCode
         )
-        return com.seanshubin.csv.report.console.runApplication(testIntegrations)
+
+        return applicationRunner(testIntegrations)
     }
 
     // Query methods - for assertions
@@ -500,35 +556,50 @@ class ApplicationTester {
         return capturedOutput.any { it.contains(text) }
     }
 
-    fun getOutputLineCount(): Int = capturedOutput.size
+    fun getOutputLineCount(): Int {
+        return capturedOutput.size
+    }
+
+    fun getOutput(): String {
+        return capturedOutput.joinToString("\n")
+    }
+
+    fun getRetryIntervals(): List<Long> {
+        return retryIntervals.toList()
+    }
+
+    fun getUploadAttemptCount(): Int {
+        return fakeHttpClient.getAttemptCount()
+    }
+
+    fun getUploadedManifest(): String? {
+        return fakeHttpClient.getLastUploadedBody()
+    }
+
+    fun wasUploadSuccessful(): Boolean {
+        return fakeHttpClient.getAttemptCount() > 0
+    }
 }
 
 // Test using orchestrator
 @Test
 fun `full application flow with fake integrations`() {
     // given
-    val tester = ApplicationTester()
+    val tester = ApplicationTester(::execute)
     tester.setupConfigFile("test-config.txt",
-        csvPath = "test-data.csv",
-        columns = "name,department",
-        format = "TABLE"
+        sourceDirectory = "test-source",
+        outputFormat = "JSON",
+        archiveServerUrl = "http://archive.example.com"
     )
-    tester.setupCsvFile("test-data.csv",
-        header = listOf("name", "age", "department", "salary"),
-        rows = listOf(
-            listOf("Alice", "28", "Engineering", "75000"),
-            listOf("Bob", "35", "Marketing", "82000")
-        )
-    )
+    tester.setupSourceFile("test-source/file1.txt", "test content")
 
     // when
-    tester.runApplication("test-config.txt")
+    val exitCode = tester.runApplication("test-config.txt")
 
     // then
-    assertTrue(tester.outputContains("Alice"))
-    assertTrue(tester.outputContains("Engineering"))
-    assertTrue(!tester.outputContains("salary"))  // Filtered out
-    assertEquals(5, tester.getOutputLineCount())
+    assertEquals(0, exitCode)
+    assertTrue(tester.outputContains("Manifest uploaded successfully"))
+    assertTrue(tester.wasUploadSuccessful())
 }
 ```
 
