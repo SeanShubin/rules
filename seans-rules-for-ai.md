@@ -58,16 +58,34 @@ Once you both fully understand and agree with the AI's proposal, it is no longer
 
 ### Test behavior units, not compilation units
 A unit test tests a unit of behavior, not a compilation unit (class/file).
-The one-test-per-class pattern ties tests to implementation details, making code harder to change—the opposite of what tests should do.
-Tests should enable refactoring, not prevent it.
+The common mistake: people conflate these two completely different concepts.
 
-AI's ability to manage complexity and generate comprehensive fakes lets us test entire behaviors at application boundaries.
-We fake external dependencies (files, clock, network) but test through the full internal dependency chain.
-Internal structure—whether one class or twenty—is implementation detail that tests should ignore.
+**The conflation problem:**
+"Unit test" does not mean "one test per class."
+When you think unit = class, you create shallow tests that mock every collaborator.
+This ties tests to implementation details—the exact structure of your classes—making refactoring difficult.
+Tests should enable change, not prevent it.
 
-The "unit" in unit testing is a behavioral unit, not a compilation unit, so what you are really trying to do is test a coherent piece of behavior in isolation from external dependencies.
-Testing the full behavior through a real internal dependency chain with fake external dependencies is not BDD—it is simply correct unit testing.
-BDD has similarities to correct unit testing, but BDD typically refers to a more heavyweight methodology involving natural language specifications and special tooling.
+**The depth problem:**
+Shallow tests mock internal collaborators and verify interactions ("did you call this method?").
+This tests how the code is structured, not what it does.
+Deep tests use real internal collaborators and verify outcomes ("did the right thing happen?").
+This tests behavior and allows you to restructure freely.
+
+**These are the same problem:**
+Both stem from confusing behavioral boundaries with structural boundaries.
+The "unit" in unit testing means a coherent piece of behavior isolated from external dependencies.
+Whether that behavior uses one class or twenty classes internally is an implementation detail.
+
+**The right approach:**
+Fake external dependencies (files, clock, network) at the application boundary.
+Test through the full internal dependency chain using real collaborators.
+Internal structure becomes transparent to tests—you can refactor freely while tests prove behavior is preserved.
+
+AI's ability to manage complexity makes this practical.
+AI generates comprehensive fakes for external dependencies, letting you test deep behaviors without shallow mocking.
+This is not BDD—it is simply correct unit testing.
+BDD has superficial similarities but typically refers to a more heavyweight methodology with natural language specifications and special tooling.
 
 ### Use the staged dependency injection pattern
 The staged dependency injection pattern enables deep testing by bundling all external interactions into Integrations.
