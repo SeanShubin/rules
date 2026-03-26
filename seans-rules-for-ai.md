@@ -1,4 +1,4 @@
-# Sean's Rules for AI
+# Sean's Rules for humans using AI
 - Constraints
   - Don't accept code from AI you would not have written yourself 
   - Don't trust anything an AI says

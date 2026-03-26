@@ -1,0 +1,21 @@
+- Sean's process for using AI assistants as a human
+  - Give the AI a task
+  - Interrogate the AI responses
+    - Push back against all truth claims you don't already know
+    - Push back against all reasoning you don't already agree with
+    - Push back against all suggestions you don't already understand
+    - Identify facts and suggestions that were omitted
+  - Decide which factual claims to accept and which decisions follow
+    - Make sure the AI sticks to the facts and decisions you already established with it
+    - When the AI deviates (and it will) explain to the AI why it is wrong until it is able to generate the proper responses
+    - Review the entire git diff, repeating the above steps as necessary until the code looks like you wrote it
+  - Repetition
+    - The AI can be run repetitively, if, and only if, you can establish a feedback loop based on objective rules with no interpretation
+      - Disassembling Java bytecode into a tree
+        - "Look at how I have disassembled the code attribute into a tree structure according to section 4.7.3 of the Java Virtual Machine Specification Java SE 26 edition"
+        - "Implement this same capability with the other 30 subsections of section 4.7"
+        - "Verify by disassembling the entire jvm library and making sure no byte is unaccounted for"
+      - Removing dependency cycles
+        - "Check the root readme of my SeanShubin/code-structure project on github"
+        - "This application runs during the mvn verify phase of this project"
+        - "Reorganize the code such that this application no longer reports dependency cycles"
