@@ -9,7 +9,12 @@
     - Make sure the AI sticks to the facts and decisions you already established with it
     - When the AI deviates (and it will) explain to the AI why it is wrong until it is able to generate the proper responses
     - Review the entire git diff, repeating the above steps as necessary until the code looks like you wrote it
-  - Repetition
+  - Where to put context
+    - Best: in the code via names and abstraction boundaries
+    - Second best: in your skill plugin
+    - Third best: in your current claude session
+    - Not: in agents related to your current task, keep your current task in the current session, relegate agents to tasks that don't need your context
+  - Repetition Examples
     - The AI can be run repetitively, if, and only if, you can establish a feedback loop based on objective rules with no interpretation
       - Disassembling Java bytecode into a tree
         - "Look at how I have disassembled the code attribute into a tree structure according to section 4.7.3 of the Java Virtual Machine Specification Java SE 26 edition"
