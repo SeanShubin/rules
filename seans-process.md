@@ -13,7 +13,7 @@
   - Review the git diff
     - Approve of each AI change individually, rejecting or using tab to add context as necessary 
     - Or review the entire git diff at the end
-    - Either way, repeat until the code looks like what you would have written
+    - Either way, repeat until the code looks like what you would have written given the facts and decisions you have verified
 
 ## Where to put context
 - Best: in the code via names and abstraction boundaries
@@ -31,7 +31,7 @@
     - The assistant builds understanding by doing the work directly
 
 ## Repetition Examples
-- The AI can be run repetitively, if, and only if, you can establish a feedback loop based on objective rules with no interpretation
+- The AI can be run repetitively, if, and only if, you can establish a feedback loop based on an objectively verifiable result.
   - Disassembling Java bytecode into a tree
     - "Look at how I have disassembled the code attribute into a tree structure according to section 4.7.3 of the Java Virtual Machine Specification Java SE 26 edition"
     - "Implement this same capability with the other 30 subsections of section 4.7"
