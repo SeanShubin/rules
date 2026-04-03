@@ -3,9 +3,9 @@
 ## Flow
 - Give the AI a task
 - Interrogate the AI responses
-  - Push back against all truth claims you don't already know
+  - Verify all truth claims you don't already know
   - Push back against all reasoning you don't already agree with
-  - Push back against all suggestions you don't already understand
+  - Clarify all suggestions you don't already understand
   - Identify facts and suggestions that were omitted
 - Decide which factual claims to accept and which decisions follow
   - Make sure the AI sticks to the facts and decisions you already established with it
