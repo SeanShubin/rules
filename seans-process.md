@@ -9,18 +9,25 @@
   - Identify facts and suggestions that were omitted
 - Decide which factual claims to accept and which decisions follow
   - Make sure the AI sticks to the facts and decisions you already established with it
-  - When the AI deviates (and it will) explain to the AI why it is wrong until it is able to generate the proper responses
+  - When the AI deviates (and it will), get it to generate the proper responses, possibilities include:
+    - remind it of the relevant facts and decisions
+    - explain to it why it is wrong
+    - write it yourself
   - Review the git diff
-    - Approve of each AI change individually, rejecting or using tab to add context as necessary 
+    - Approve of each AI change individually, rejecting or using tab to add context as necessary
     - Or review the entire git diff at the end
     - Either way, repeat until the code looks like what you would have written given the facts and decisions you have verified
+    - You are just as responsible for commits you push whether you
+      - typed the code yourself
+      - copied and pasted the code from the internet
+      - prompted the code into existence with an AI Assistant
 
 ## Where to put context
 - Best: in the code via names and abstraction boundaries
 - Second best: in your skill plugin (global, reusable across projects)
 - Third best: in project CLAUDE.md files (project-specific, persistent)
 - Fourth: in memory files (facts about you/project/feedback, persistent across sessions)
-- Last resort: in your current claude session (ephemeral, lost after conversation)
+- Last: in your current claude session (ephemeral, lost after conversation)
 - Reminders
   - Subagents don't inherit your context, so delegate only tasks that don't need it
   - Goal is protecting context from noise, not reducing context itself
